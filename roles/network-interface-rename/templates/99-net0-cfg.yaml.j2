@@ -1,0 +1,9 @@
+network:
+  version: 2
+  ethernets:
+    {{ new_interface_name }}:
+      dhcp4: true
+      dhcp6: false
+      match:
+        macaddress: "{{ ansible_default_ipv4.macaddress }}"
+      set-name: "{{ new_interface_name }}"
