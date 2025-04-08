@@ -1,0 +1,27 @@
+#roles/luks-encryption/tasks/disk_specific.yaml
+---
+
+- name: Import assert.yaml
+  import_tasks:
+    file: assert.yaml
+
+# Disk-specific tasks
+- name: Disk-specific tasks
+  block:
+  - name: Check if disk already have GPT partition tables
+    command: parted -s {{ target_device }} print
+    register: parted_check
+    changed_when: false
+    failed_when: parted_check.rc != 0 and "unrecognised disk label" not in parted_check.stderr
+    
+  - name: Create GPT partition table on disks
+    command: parted -s {{ target_device }} mklabel gpt
+    when: 
+      - parted_check.rc == 0 or "'gpt' not in parted_check.stdout"
+  when: not force_overwrite
+
+# Common encryption tasks
+- name: Include common encryption tasks
+  include_tasks: common.yaml
+  vars:
+    device_type: "disk"

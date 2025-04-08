@@ -6,7 +6,7 @@
   gather_facts: true
 
   roles:
- 
+  - { role: luks-encryption, tags: luks }
   - { role: cpu-performance-optimisation, tags: cpu }
   - { role: network-interface-rename, tags: network }
 

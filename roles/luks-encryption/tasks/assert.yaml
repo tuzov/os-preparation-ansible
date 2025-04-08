@@ -1,0 +1,34 @@
+#roles/luks-encryption/tasks/assert.yaml
+---
+- name: Ensure required variables are defined
+  assert:
+    that:
+      - local_secret_dir is defined
+      - remote_secret_dir is defined
+      - keyfile_source_dev is defined
+      - keyfile_size is defined
+      - keyfile_cipher_default is defined
+    msg: "Missing required variables. Please define local_secret_dir, remote_secret_dir, keyfile_source_dev, keyfile_size, and keyfile_cipher_default."
+
+- name: Check if devices exist 
+  stat:
+    path: "{{ target_device }}"
+  register: device_stats
+  failed_when: not device_stats.stat.exists
+    
+- name: Gather mount facts
+  setup:
+    gather_subset:
+      - mounts
+
+- name: Fail if devices are mounted
+  fail:
+    msg: "Device {{ target_device }} is currently mounted. Please unmount the devices manually"
+  when: target_device in ansible_mounts | map(attribute='device') | list
+
+- name: Check if devices are already encrypted
+  command: cryptsetup isLuks {{ target_device }}
+  register: encryption_check
+  changed_when: false
+  failed_when: encryption_check == 0
+  when: not force_overwrite

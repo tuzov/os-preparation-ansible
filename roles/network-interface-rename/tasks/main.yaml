@@ -69,6 +69,19 @@
 
   when: not net0_exists
 
+#- name: Display information about renamed interface
+#  debug:
+#    var: ansible_facts.default_ipv4
+
 - name: Display information about renamed interface
   debug:
-    var: ansible_facts.default_ipv4
+    msg:
+      - "===== Interface Information ====="
+      - "Address: {{ ansible_facts.default_ipv4.address }}"
+      - "Gateway: {{ ansible_facts.default_ipv4.gateway }}"
+      - "Interface: {{ ansible_facts.default_ipv4.interface }}"
+      - "MAC Address: {{ ansible_facts.default_ipv4.macaddress }}"
+      - "Netmask: {{ ansible_facts.default_ipv4.netmask }}"
+      - "Network: {{ ansible_facts.default_ipv4.network }}"
+      - "Prefix: {{ ansible_facts.default_ipv4.prefix }}"
+      - "================================="
