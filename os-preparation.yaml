@@ -22,6 +22,7 @@
         {% if  ansible_processor_threads_per_core | int > 1 %}
           Enabled {% else %}
           Disabled {% endif %}
+    tags: always
 
   - name: Display CPU information
     debug:
@@ -35,3 +36,4 @@
         - "Thread(s) per core: {{ ansible_processor_threads_per_core }}"
         - "Multithreading: {{ hyperthreading }}"
         - "==========================="
+    tags: always
