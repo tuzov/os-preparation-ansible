@@ -33,6 +33,7 @@
       copy:
         src: "{{ item.path }}"
         dest: "{{ item.path }}.bak"
+        mode: '0600'
         remote_src: true
       loop: "{{ cloud_netplan_files.files }}"
 
@@ -57,7 +58,11 @@
       register: netplan_result
       failed_when: netplan_result.rc != 0
 
-    #7. display information
+    - name: Wait for network to stabilize
+      pause:
+        seconds: 5
+
+    #6. display information
     - name: Gather updated facts
       setup:
         gather_subset:
