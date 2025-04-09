@@ -11,9 +11,9 @@
 
   - role: cpu-performance-optimisation
     tags: cpu 
-    
+
   - role: network-interface-rename
-    tags: network 
+    tags: interface 
 
   tasks:
   - name: Set hyperthreading status 
