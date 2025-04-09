@@ -45,8 +45,8 @@
     #4. template new configuration
     - name: Create netplan config with renamed interface
       template:
-        src: 99-net0-cfg.yaml.j2
-        dest: /etc/netplan/99-{{ new_interface_name }}-cfg.yaml
+        src: 01-net0-cfg.yaml.j2
+        dest: /etc/netplan/01-{{ new_interface_name }}-cfg.yaml
         owner: root
         group: root
         mode: '0600'
