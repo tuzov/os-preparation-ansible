@@ -79,7 +79,8 @@ ansible-playbook -i inventory.ini os-preparation.yaml --tags interface
 
 Encrypts disks and partitions using LUKS, with automated key management and persistent mounting. See [luks-encryption README](roles/luks-encryption/README.md) for details.
 
-**Warning:** Never encrypt the BIOS boot partition (commonly 4MB with `bios_grub` flag). Verify partitions with `parted /dev/sda print` before encryption. See [luks-encryption README warning](roles/luks-encryption/README.md#⚠️-critical-warning-⚠️) for more detailed information.
+#### ⚠️ Warning!
+Never encrypt the BIOS boot partition (commonly 4MB with `bios_grub` flag). Verify partitions with `parted /dev/sda print` before encryption. See [luks-encryption README warning](roles/luks-encryption/README.md#⚠️-critical-warning-⚠️) for more detailed information.
 
 ### CPU Performance Optimization
 
