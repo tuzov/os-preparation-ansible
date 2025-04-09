@@ -2,7 +2,7 @@
 
 ## Description
 
-This Ansible role implements LUKS (Linux Unified Key Setup) encryption for disks and partitions on Linux systems. It supports encrypting both entire secondary disks and individual partitions on the primary disk, creating secure encrypted volumes with automated key management. The role handles the complete encryption lifecycle including key generation, LUKS setup, filesystem creation, and mounting.
+This Ansible role implements LUKS (Linux Unified Key Setup) encryption for disks and partitions on Linux systems. It supports encrypting both entire secondary disks and individual partitions on the primary disk, creating secure encrypted volumes with automated key management. The role handles the complete encryption lifecycle including key generation, LUKS setup, filesystem creation, and mounting. For smaller than 10M device, luks1 encryption type is used, luks2 for the rest.
 
 The role uses cryptsetup to implement encryption, generates secure keyfiles for automated unlocking, and configures the system for persistent mounting through /etc/crypttab entries.
 
@@ -106,6 +106,8 @@ partition_mount=/encrypted-home
 mount_owner=appuser
 mount_group=appgroup
 ```
+
+To copy keyfiles and headers to remote machines after reboot, please utilise `copy-luks-keys.yaml` playbook.
 
 ## How It Works
 

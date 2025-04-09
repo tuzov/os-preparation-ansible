@@ -1,0 +1,57 @@
+- name: Copy LUKS encryption keys and headers to appropriate hosts
+  hosts: all
+  become: true
+  vars:
+    local_secret_dir: "{{ playbook_dir }}/secrets"
+    keyfiles_dir: "cryptsetup-keys"
+    headers_dir: "luks-headers"
+    remote_secret_dir: "/run/cryptsetup"
+
+    tasks:
+    - name: Ensure remote secret directories exist
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0700'
+      loop:
+        - "{{ remote_secret_dir }}"
+        - "{{ remote_secret_dir }}/{{ keyfiles_dir }}"
+        - "{{ remote_secret_dir }}/{{ headers_dir }}"
+ 
+    - name: Find keyfiles for this host
+      find:
+        paths: "{{ local_secret_dir }}/{{ keyfiles_dir }}"
+        patterns: "key-{{ ansible_hostname }}*"
+      register: host_keyfiles
+      delegate_to: localhost
+      become: false
+    
+    - name: Find LUKS headers for this host
+      find:
+        paths: "{{ local_secret_dir }}/{{ headers_dir }}"
+        patterns: "header-{{ ansible_hostname }}*.bin"
+      register: host_headers
+      delegate_to: localhost
+      become: false   
+  
+    - name: Copy keyfiles to remote system
+      copy:
+        src: "{{ item.path }}"
+        dest: "{{ remote_secret_dir }}/{{ keyfiles_dir }}/{{ item.path | basename }}"
+        owner: root
+        group: root
+        mode: '0400'
+      loop: "{{ host_keyfiles.files }}"
+      when: host_keyfiles.files | length > 0
+    
+    - name: Copy LUKS headers to remote system
+      copy:
+        src: "{{ item.path }}"
+        dest: "{{ remote_secret_dir }}/{{ headers_dir }}/{{ item.path | basename }}"
+        owner: root
+        group: root
+        mode: '0400'
+      loop: "{{ host_headers.files }}"
+      when: host_headers.files | length > 0
