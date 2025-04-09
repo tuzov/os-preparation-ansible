@@ -1,6 +1,5 @@
 #roles/luks-encryption/tasks/disk_specific.yaml
 ---
-
 - name: Import assert.yaml
   import_tasks:
     file: assert.yaml

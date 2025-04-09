@@ -10,10 +10,8 @@
   set_fact:
     device_safe_name: "{{ target_device | regex_replace('/', '-') }}"
 
-## blur the boundary between encrypted data and unencrypted data with shred
-
-#### Key Management
-# Create directory structure for keyfiles
+#### key Management
+# create directory structure for keyfiles
 - name: Create local secret directory
   file:
     path: "{{ item }}"
@@ -68,8 +66,8 @@
     mode: '0400'
     owner: root
     group: root
-###
-## select which cipher to pick 
+
+# select which cipher to pick 
 - name: Check partition size
   shell: blockdev --getsize64 {{ target_device }}
   register: device_size
@@ -89,11 +87,8 @@
     type: "{{ luks_version }}"
     cipher: "{{ selected_keyfile_cipher }}"
     keyfile: "{{ remote_secret_dir }}/{{ keyfiles_dir }}/key-{{ ansible_hostname}}{{ device_safe_name }}"
-    #passphrase: "{{ item.passphrase | default(omit) }}"  # noqa: args[module]
-    #keyfile: "{{ item.keyfile | default(omit) }}"  # noqa: args[module]
-  #no_log: true
 
-# Find UUID of device
+# find UUID of device
 - name: Get LUKS UUID for device
   command: blkid -s UUID -o value {{ target_device }}
   register: device_uuid
@@ -104,7 +99,7 @@
   set_fact:
     device_uuid: "{{ device_uuid.stdout }}"
 
-### add device to crypttab
+# add device to crypttab
 - name: Add device to crypttab
   community.general.crypttab:
     name: "encrypted{{ device_safe_name }}"
@@ -114,7 +109,7 @@
     opts: cipher="{{ selected_keyfile_cipher }}"
   no_log: true
 
-## start /etc/crypttab
+# start /etc/crypttab
 - name: Start device mapper target
   command: cryptdisks_start "encrypted{{ device_safe_name }}"
   register: cryptdisks_start_results
@@ -127,14 +122,14 @@
   register: device_mapper_stats
   failed_when: not device_mapper_stats.stat.exists
 
-### create filesystem ext4
+# create filesystem ext4
 - name: Create filesystem on LUKS devices
   filesystem:
     fstype: "{{ fstype }}"
     dev: "/dev/mapper/encrypted{{ device_safe_name }}"
   when: manage_filesystem and device_mapper_stats.stat.exists
 
-## mount the drive
+# mount the drive
 - name: Create mount directory
   file:
     path: "{{ target_name }}"
@@ -158,8 +153,7 @@
     state: mounted
   when: manage_filesystem and device_mapper_stats.stat.exists and manage_mount
 
-## header backup
-
+# header backup
 - name: Create temporary header backup on remote host
   command: >
     cryptsetup luksHeaderBackup {{ target_device }} 

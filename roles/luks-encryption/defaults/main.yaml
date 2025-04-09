@@ -1,11 +1,9 @@
 #roles/luks-encryption/defaults/main.yaml
 ---
-
-
-# Force overwrite of already encrypted disks
+# force overwrite of already encrypted disks
 force_overwrite: false
 
-# Directories for keyfile and header storage
+# directories for keyfile and header storage
 local_secret_dir: "{{ playbook_dir }}/secrets"
 remote_secret_dir: "/dev/shm" 
 keyfiles_dir: cryptsetup-keys
@@ -22,16 +20,12 @@ keyfile_cipher_light: aes-xts-plain64 # for tiny partition that can't take defau
 manage_filesystem: true # if true will create a filesystem
 manage_mount: true # one-time mount only because keyfile only lives on the system uptill reboot
 fstype: ext4
-# Specify disk/partition mounting points; used to dev/mapper name as well
+# specify disk/partition mounting points; used to dev/mapper name as well
 disk_mount: /data
 partition_mount: /tiny-data
 
 mount_owner: root
 mount_group: root
-
-# Security settings:
-# Set to true to shred partitions before encryption (takes time)
-shred_before_encryption: false
 
 # Header backups
 header_backup: true 
