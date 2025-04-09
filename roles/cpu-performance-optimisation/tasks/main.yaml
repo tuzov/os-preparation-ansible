@@ -18,8 +18,7 @@
 
 - name: Set C state valid
   set_fact:
-    cpu_cstate_valid: true
-  when: cpuidle_valid.results[0].stat.exists
+    cpu_cstate_valid: "{{ cpuidle_valid.results[0].stat.exists | default(false) | bool }}"
 
 - name: Create necessary directories
   file:
