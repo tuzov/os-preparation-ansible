@@ -4,7 +4,7 @@
   import_tasks:
     file: assert.yaml
 
-# Disk-specific tasks
+# disk-specific tasks
 - name: Disk-specific tasks
   block:
   - name: Check if disk already have GPT partition tables
@@ -19,7 +19,7 @@
       - parted_check.rc == 0 or "'gpt' not in parted_check.stdout"
   when: not force_overwrite
 
-# Common encryption tasks
+# common encryption tasks
 - name: Include common encryption tasks
   include_tasks: common.yaml
   vars:

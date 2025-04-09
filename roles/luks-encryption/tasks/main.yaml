@@ -5,7 +5,6 @@
     encrypt_disk: "{{ secondary_disk is defined and secondary_disk != '' }}"
     encrypt_partition: "{{ partition_on_primary is defined and partition_on_primary != '' }}"
 
-# install package: cryptsetup
 - name: Install cryptsetup package
   apt:
     name: 
@@ -13,7 +12,7 @@
       - coreutils
     state: present
 
-# Encrypt disk if configured
+# encrypt disk if configured
 - name: Encrypt disks
   include_tasks: disk_specific.yaml
   vars:
@@ -21,7 +20,7 @@
     target_name: "{{ disk_mount }}"
   when: encrypt_disk
 
-# Encrypt partition if configured
+# encrypt partition if configured
 - name: Encrypt partition
   include_tasks: common.yaml
   vars:

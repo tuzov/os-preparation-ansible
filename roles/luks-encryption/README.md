@@ -6,6 +6,35 @@ This Ansible role implements LUKS (Linux Unified Key Setup) encryption for disks
 
 The role uses cryptsetup to implement encryption, generates secure keyfiles for automated unlocking, and configures the system for persistent mounting through /etc/crypttab entries.
 
+## ⚠️ CRITICAL WARNING ⚠️
+NEVER encrypt the BIOS boot partition on the primary disk! This partition (typically 4MB in size and marked with bios_grub flag) is essential for system boot. Encrypting this partition will render your system completely unbootable and may require full reinstallation.
+Before proceeding with encryption, always identify the BIOS boot partition:
+```
+# lsblk
+xvda     202:0    0   18G  0 disk
+├─xvda1  202:1    0   17G  0 part /
+├─xvda14 202:14   0    4M  0 part
+├─xvda15 202:15   0  106M  0 part /boot/efi
+└─xvda16 259:0    0  913M  0 part /boot
+
+# parted /dev/xvda print
+Model: Xen Virtual Block Device (xvd)
+Disk /dev/xvda: 19.3GB
+Sector size (logical/physical): 512B/512B
+Partition Table: gpt
+Disk Flags:
+
+Number  Start   End     Size    File system  Name  Flags
+14      1049kB  5243kB  4194kB                     bios_grub
+```
+
+As shown above, partition 14 has the bios_grub flag and is 4MB - this partition must never be encrypted.
+Also avoid encrypting:
+
+* EFI System Partition (often mounted at /boot/efi)
+* /boot partition
+* Active root partition without proper initramfs configuration
+
 ## Requirements
 
 - Debian/Ubuntu-based Linux distribution
