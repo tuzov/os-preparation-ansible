@@ -1,6 +1,6 @@
 #cpu-performance-optimisation/defaults/main.yaml
 ---
-# does not work on aws, thus disabled by default
+# does not work on aws
 #disable_cstates_persistent: false
 #disable_cstates_grub_cmdline: "intel_idle.max_cstate=0 processor.max_cstate=1 idle=poll"
 

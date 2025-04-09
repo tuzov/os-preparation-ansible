@@ -1,10 +1,5 @@
-#cpu-performance-optimisation/handers/main.yaml
+#cpu-performance-optimisation/handlers/main.yaml
 ---
-- name: update grab
-  command: "update-grub"
-  register: update_grub_result
-  failed_when: update_grub_result.rc != 0
-
 - name: start tuned
   systemd_service:
     name: tuned

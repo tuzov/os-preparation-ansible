@@ -1,27 +1,34 @@
 #roles/cpu-performance-optimisation/tasks/main.yaml
-
+---
 # 1. Disable C-state for all available CPUs
-
 - name: Set CPU count fact
   set_fact:
     cpu_count: "{{ ansible_processor_vcpus | default(ansible_processor_count) }}"
 
-# Disable C states for each cpu
 - name: Check if cpuidle directory exists for each CPU
   stat:
     path: "/sys/devices/system/cpu/cpu{{ item }}/cpuidle"
+  register: cpuidle_valid
   loop: "{{ range(0, cpu_count | int) | list }}"
-# may be should fail is doesn't find
+
+- name: Verify at least one CPU has cpuidle support
+  debug:
+    msg: "No CPUs with cpuidle support found. Skipping C-state optimization."
+  when: not cpuidle_valid.results[0].stat.exists 
+
+- name: Set C state valid
+  set_fact:
+    cpu_cstate_valid: true
+  when: cpuidle_valid.results[0].stat.exists
 
 - name: Create necessary directories
   file:
-    path: "{{ item }}"
+    path: "{{ disable_cstates_dir }}"
     state: directory
     owner: root
     group: root
     mode: '0644'
-  loop:
-    - "{{ disable_cstates_dir }}"
+  when: cpu_cstate_valid
 
 - name: Copy templates
   template:
@@ -34,6 +41,7 @@
     - { src: disable-cstates.sh.j2, dest: "{{ disable_cstates_dir }}/disable-cstates.sh", mode: '0750' }
     - { src: disable-cstates.service.j2, dest: /etc/systemd/system/disable-cstates.service, mode: '0644'}
   notify: start disable_cstates
+  when: cpu_cstate_valid
 
 # 2. Switching CPU operation to performance
 - name: Install tuned package
@@ -42,10 +50,15 @@
     state: present
   notify: start tuned
 
+- name: Check current tuned profile
+  command: tuned-adm active
+  register: current_tuned_profile
+  changed_when: false
+
 - name: tuned active profile
   command: "tuned-adm profile {{ tuned_profile }}"
   register: tuned_activate_results
-  changed_when: true
+  changed_when: "tuned_profile not in current_tuned_profile.stdout"
   failed_when: tuned_activate_results.rc != 0
 
 - name: Check available governors
