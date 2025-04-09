@@ -6,6 +6,8 @@ This Ansible role implements LUKS (Linux Unified Key Setup) encryption for disks
 
 The role uses cryptsetup to implement encryption, generates secure keyfiles for automated unlocking, and configures the system for persistent mounting through /etc/crypttab entries.
 
+This role will halt execution if either the partition or secondary disk is already encrypted. If you want to encrypt a new device while one is already encrypted, remove the encrypted device's name from the corresponding variable (either partition_on_primary or secondary_disk) before running the role.
+
 ## ⚠️ CRITICAL WARNING ⚠️
 NEVER encrypt the BIOS boot partition on the primary disk! This partition (typically 4MB in size and marked with bios_grub flag) is essential for system boot. Encrypting this partition will render your system completely unbootable and may require full reinstallation.
 Before proceeding with encryption, always identify the BIOS boot partition:
@@ -118,6 +120,7 @@ mount_group=appgroup
    - Creates LUKS header backups for recovery
 4. For partition encryption:
    - Follows similar steps as disk encryption without partition table manipulation
+
 
 ## Verification
 
