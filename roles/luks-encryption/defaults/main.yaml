@@ -1,8 +1,5 @@
 #roles/luks-encryption/defaults/main.yaml
 ---
-# force overwrite of already encrypted disks
-force_overwrite: false
-
 # directories for keyfile and header storage
 local_secret_dir: "{{ playbook_dir }}/secrets"
 remote_secret_dir: "/dev/shm" 

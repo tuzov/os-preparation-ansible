@@ -5,20 +5,21 @@
     file: assert.yaml
 
 # disk-specific tasks
-- name: Disk-specific tasks
-  block:
-  - name: Check if disk already have GPT partition tables
-    command: parted -s {{ target_device }} print
-    register: parted_check
-    changed_when: false
-    failed_when: parted_check.rc != 0 and "unrecognised disk label" not in parted_check.stderr
-    
-  - name: Create GPT partition table on disks
-    command: parted -s {{ target_device }} mklabel gpt
-    when: 
-      - parted_check.rc == 0 or "'gpt' not in parted_check.stdout"
-  when: not force_overwrite
+- name: Check if disk already has GPT partition tables
+  command: parted -s {{ target_device }} print
+  register: parted_check
+  changed_when: false
+  failed_when: parted_check.rc != 0 and "'unrecognised disk label' not in parted_check.stderr"
 
+- name: Fail if disk already has gpt partition
+  fail:
+    msg: Disk {{ target_device }} already has GPT partition, thus it is likely to be in use already. Please check!
+  when: "'gpt' in parted_check.stdout" 
+
+- name: Create GPT partition table on disks
+  command: parted -s {{ target_device }} mklabel gpt
+  when: parted_check.rc == 0 and "'gpt' not in parted_check.stdout"
+ 
 # common encryption tasks
 - name: Include common encryption tasks
   include_tasks: common.yaml

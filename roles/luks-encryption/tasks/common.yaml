@@ -1,14 +1,14 @@
 #roles/luks-encryption/tasks/common.yaml
 ---
 # assert variables and validate device
-- name: Import assert.yaml
-  import_tasks:
-    file: assert.yaml
-  when: device_type == "partition"
+# - name: Import assert.yaml
+#   import_tasks:
+#     file: assert.yaml
+#   when: device_type == "partition"
 
-- name: Set device safe name
-  set_fact:
-    device_safe_name: "{{ target_device | regex_replace('/', '-') }}"
+# - name: Set device safe name
+#   set_fact:
+#     device_safe_name: "{{ target_device | regex_replace('/', '-') }}"
 
 #### key Management
 # create directory structure for keyfiles

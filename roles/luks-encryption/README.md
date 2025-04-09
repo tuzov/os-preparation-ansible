@@ -48,7 +48,6 @@ Also avoid encrypting:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `force_overwrite` | `false` | Force overwrite of already encrypted disks |
 | `local_secret_dir` | `{{ playbook_dir }}/secrets` | Local directory for keyfiles and headers |
 | `remote_secret_dir` | `/dev/shm` | Remote in-memory directory for sensitive operations |
 | `keyfiles_dir` | `cryptsetup-keys` | Subdirectory for keyfiles |
@@ -153,3 +152,4 @@ To test this role in isolation before deploying to production:
 - The encryption process cannot be easily reversed without potential data loss
 - For critical data, consider implementing additional backup strategies
 - The keyfiles are generated automatically and should be securely stored
+- Mounts do not survive reboot as keyfile is located on `/dev/shm`

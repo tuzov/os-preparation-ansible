@@ -22,7 +22,7 @@
 
 # encrypt partition if configured
 - name: Encrypt partition
-  include_tasks: common.yaml
+  include_tasks: partition_specific.yaml
   vars:
     target_device: "{{ partition_on_primary }}"
     target_name: "{{ partition_mount }}"
