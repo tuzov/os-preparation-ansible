@@ -53,13 +53,9 @@
 
     #5. netplan apply
     - name: Apply netplan config
-      ansible.builtin.command: netplan apply
+      command: netplan apply
       register: netplan_result
       failed_when: netplan_result.rc != 0
-
-    #- name: Wait for a bit
-    #  ansible.builtin.pause:
-    #    seconds: 2
 
     #7. display information
     - name: Gather updated facts
@@ -68,10 +64,6 @@
           - network
 
   when: not net0_exists
-
-#- name: Display information about renamed interface
-#  debug:
-#    var: ansible_facts.default_ipv4
 
 - name: Display information about renamed interface
   debug:
