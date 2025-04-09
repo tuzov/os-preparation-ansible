@@ -1,5 +1,5 @@
 # main.yaml - course playbook
-- hosts: all
+- hosts: os_preparation
   user: ubuntu
   become: yes
   become_user: root
@@ -14,3 +14,39 @@
 
   - name: Testing this out
     debug: msg="Hello from user {{ ansible_user_id }} on server {{ ansible_hostname }}!"
+
+  # 3. Display CPU Information
+  - name: Run lscpu to get CPU info
+    command: lscpu 
+    register: lscpu_output
+
+  - name: Create CPU info vars
+    set_fact:
+      cpu_summary:
+        full: "{{ lscpu_output.stdout_lines }}"
+        architecture: "{{ lscpu_output.stdout | regex_search('Architecture:\\s*(\\w+)', '\\1') | first | default('0')}}"
+        model: "{{ lscpu_output.stdout | regex_search('Model name:\\s*(.+)', '\\1') | first | default('0')}}"
+        cores: "{{ lscpu_output.stdout | regex_search('CPU\\(s\\):\\s*(\\d+)', '\\1') | first | default('0')}}"
+        threads: "{{ lscpu_output.stdout | regex_search('Thread\\(s\\) per core:\\s*(\\d+)', '\\1') | first | default('0')}}"
+        cores_per_socket: "{{ lscpu_output.stdout | regex_search('Core\\(s\\) per socket:\\s*(\\d+)', '\\1') | first | default('0')}}"
+        sockets: "{{ lscpu_output.stdout | regex_search('Socket\\(s\\):\\s*(\\d+)', '\\1') | first | default('0') }}"
+
+  - name: Set hyperthreading status 
+    set_fact:
+      hyperthreading_status: >-
+        {% if  cpu_summary.threads | int > 1 %}
+          Enabled {% else %}
+          Disabled {% endif %}
+
+  - name: Display CPU information
+    debug:
+      msg:
+        - "===== CPU Information ====="
+        - "Architecture: {{ cpu_summary.architecture }}"
+        - "CPU Model: {{ cpu_summary.model }}"
+        - "CPU(s): {{ cpu_summary.cores }}"
+        - "Socket(s): {{ cpu_summary.sockets }}"
+        - "Core(s) per socket: {{ cpu_summary.cores_per_socket }}"
+        - "Thread(s) per core: {{ cpu_summary.threads }}"
+        - "Multithreading Status: {{ hyperthreading_status }}"
+        - "==========================="

@@ -1,0 +1,11 @@
+[Unit]
+Description=Disable CPU C-states
+After=multi-user.target
+
+[Service]
+ExecStart={{ disable_cstates_dir }}/disable-cstates.sh
+Type=oneshot
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target

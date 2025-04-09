@@ -1,0 +1,20 @@
+#cpu-performance-optimisation/handers/main.yaml
+---
+- name: update grab
+  command: "update-grub"
+  register: update_grub_result
+  failed_when: update_grub_result.rc != 0
+
+- name: start tuned
+  systemd_service:
+    name: tuned
+    state: restarted
+    enabled: yes
+    daemon_reload: true
+
+- name: start disable_cstates
+  systemd_service:
+    name: disable-cstates
+    state: restarted
+    enabled: yes
+    daemon_reload: true

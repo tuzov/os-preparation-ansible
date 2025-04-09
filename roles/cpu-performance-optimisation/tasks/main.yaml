@@ -2,40 +2,62 @@
 
 # 1. Disable C-state for all available CPUs
 
+- name: Set CPU count fact
+  set_fact:
+    cpu_count: "{{ ansible_processor_vcpus | default(ansible_processor_count) }}"
+
+# Disable C states for each cpu
+- name: Check if cpuidle directory exists for each CPU
+  stat:
+    path: "/sys/devices/system/cpu/cpu{{ item }}/cpuidle"
+  loop: "{{ range(0, cpu_count | int) | list }}"
+# may be should fail is doesn't find
+
+- name: Create necessary directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - "{{ disable_cstates_dir }}"
+
+- name: Copy templates
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { src: disable-cstates.sh.j2, dest: "{{ disable_cstates_dir }}/disable-cstates.sh", mode: '0750' }
+    - { src: disable-cstates.service.j2, dest: /etc/systemd/system/disable-cstates.service, mode: '0644'}
+  notify: start disable_cstates
+
 # 2. Switching CPU operation to performance
+- name: Install tuned package
+  apt:
+    name: tuned
+    state: present
+  notify: start tuned
 
-# 3. Display CPU Information
-- name: Run lscpu to get CPU info
-  command: lscpu 
-  register: lscpu_output
+- name: tuned active profile
+  command: "tuned-adm profile {{ tuned_profile }}"
+  register: tuned_activate_results
+  changed_when: true
+  failed_when: tuned_activate_results.rc != 0
 
-- name: Create CPU info vars
-  set_fact:
-    cpu_summary:
-      full: "{{ lscpu_output.stdout_lines }}"
-      architecture: "{{ lscpu_output.stdout | regex_search('Architecture:\\s*(\\w+)', '\\1') | first | default('0')}}"
-      model: "{{ lscpu_output.stdout | regex_search('Model name:\\s*(.+)', '\\1') | first | default('0')}}"
-      cores: "{{ lscpu_output.stdout | regex_search('CPU\\(s\\):\\s*(\\d+)', '\\1') | first | default('0')}}"
-      threads: "{{ lscpu_output.stdout | regex_search('Thread\\(s\\) per core:\\s*(\\d+)', '\\1') | first | default('0')}}"
-      cores_per_socket: "{{ lscpu_output.stdout | regex_search('Core\\(s\\) per socket:\\s*(\\d+)', '\\1') | first | default('0')}}"
-      sockets: "{{ lscpu_output.stdout | regex_search('Socket\\(s\\):\\s*(\\d+)', '\\1') | first | default('0') }}"
+- name: Check available governors
+  command: cat /sys/devices/system/cpu/cpufreq/policy0/scaling_available_governors
+  register: available_governors
+  ignore_errors: true
 
-- name: Set hyperthreading status 
-  set_fact:
-    hyperthreading_status: >-
-     {% if  cpu_summary.threads | int > 1 %}
-      Enabled {% else %}
-      Disabled {% endif %}
+- name: Set performance governor if available
+  command: echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+  when: "'performance' in available_governors.stdout"
 
-- name: Display CPU information
+- name: Report if performance governor was not available
   debug:
-    msg:
-      - "===== CPU Information ====="
-      - "Architecture: {{ cpu_summary.architecture }}"
-      - "CPU Model: {{ cpu_summary.model }}"
-      - "CPU(s): {{ cpu_summary.cores }}"
-      - "Socket(s): {{ cpu_summary.sockets }}"
-      - "Core(s) per socket: {{ cpu_summary.cores_per_socket }}"
-      - "Thread(s) per core: {{ cpu_summary.threads }}"
-      - "Multithreading Status: {{ hyperthreading_status }}"
-      - "==========================="
+    msg: "Performance governor not available."
+  when: "'performance' not in available_governors.stdout or not available_governors.failed"
