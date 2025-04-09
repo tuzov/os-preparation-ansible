@@ -30,7 +30,7 @@ None.
   become: true
   roles:
     - role: network-interface-rename
-      tags: network
+      tags: interface
 ```
 
 With custom interface name:
@@ -41,7 +41,7 @@ With custom interface name:
   become: true
   roles:
     - role: network-interface-rename
-      tags: network
+      tags: interface
       vars:
         new_interface_name: "eth0"
 ```
