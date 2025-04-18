@@ -34,19 +34,19 @@
   ansible.builtin.set_fact:
     device_mapper_name: "/dev/mapper/encrypted{{ device_safe_name }}"
 
-- name: Fail if devices are mounted
-  ansible.builtin.fail:
-    msg: "Device {{ device_mapper_name }} is currently mounted. Danger of overwriting data!"
-  when: target_name in ansible_mounts | map(attribute='mount') | list
+- name: Check if devices are mounted
+  ansible.builtin.set_fact:
+    device_in_use: "Device {{ device_mapper_name }} is currently mounted." 
+  when: target_device in ansible_mounts | map(attribute='mount') | list
 
-- name: Fail if device mapper for this device is mounted
-  ansible.builtin.fail:
-    msg: "Device mapper for {{ target_device }} is currently mounted. Danger of overwriting data!"
+- name: "Check if device mapper for this device is mounted: {{ target_device }}"
+  ansible.builtin.set_fact:
+    dev_mapper_in_use: "Device mapper for {{ target_device }} is currently mounted."
   when: device_mapper_name in ansible_mounts | map(attribute='device') | list
 
-- name: Fail if mount point is already in use
-  ansible.builtin.fail:
-    msg: "Mount point {{ target_name }} is already in use. Danger of overwriting data!"
+- name: "Check if mount point is already in use: {{ target_name }}"
+  ansible.builtin.set_fact:
+    mount_point_in_use: "Mount point {{ target_name }} is already in use."
   when: target_name in ansible_mounts | map(attribute='mount') | list
 
 - name: Check if mapper name is already configured in crypttab
@@ -58,7 +58,32 @@
   register: mapper_name_check
   changed_when: false
 
-- name: Fail if mapper name is already configured in crypttab
-  ansible.builtin.fail:
-    msg: "Mapper name 'encrypted{{ device_safe_name }}' is already configured in /etc/crypttab. Danger of overwriting data!"
+- name: Check if mapper name is already configured in crypttab
+  ansible.builtin.set_fact:
+    dev_mapper_in_crypttab: "Mapper name 'encrypted{{ device_safe_name }}' is already configured in /etc/crypttab."
   when: mapper_name_check.found != 0
+
+- name: Set variable to skip the rest of tasks
+  ansible.builtin.set_fact:
+    skip_tasks: true
+  when: device_in_use is defined or dev_mapper_in_use is defined or mount_point_in_use is defined or dev_mapper_in_crypttab is defined
+
+- name: Log warning if tasks skipped
+  ansible.builtin.debug:
+    msg: >-
+      WARNING:
+      {% if device_in_use is defined %}
+        {{ device_in_use }};
+      {% endif %}
+      {% if dev_mapper_in_use is defined %}
+        {{ dev_mapper_in_use }};
+      {% endif %}
+      {% if mount_point_in_use is defined %}
+        {{ mount_point_in_use }};
+      {% endif %}
+      {% if dev_mapper_in_crypttab is defined %}
+        {{ dev_mapper_in_crypttab }};
+      {% endif %}.
+      Danger of overwriting data! Skipping remaining tasks for {{ target_device }}"
+  when: skip_tasks is defined
+

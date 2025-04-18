@@ -1,4 +1,3 @@
- # roles/luks-encryption/tasks/main.yaml
 ---
 - name: Set fact for devices to encrypt
   ansible.builtin.set_fact:
@@ -12,13 +11,29 @@
       - coreutils
     state: present
 
+- name: Import assert.yaml
+  ansible.builtin.import_tasks:
+    file: assert.yaml
+  vars:
+    target_device: "{{ secondary_disk }}"
+    target_name: "{{ luks_encryption__disk_mount }}"
+  when: encrypt_disk 
+
+- name: Import assert.yaml
+  ansible.builtin.import_tasks:
+    file: assert.yaml
+  vars:
+    target_device: "{{ partition_on_primary }}"
+    target_name: "{{ luks_encryption__partition_mount }}"
+  when: encrypt_partition
+  
 # encrypt disk if configured
 - name: Encrypt disks
   ansible.builtin.include_tasks: disk_specific.yaml
   vars:
     target_device: "{{ secondary_disk }}"
     target_name: "{{ luks_encryption__disk_mount }}"
-  when: encrypt_disk
+  when: encrypt_disk and skip_tasks is not defined
 
 # encrypt partition if configured
 - name: Encrypt partition
@@ -27,4 +42,4 @@
     target_device: "{{ partition_on_primary }}"
     target_name: "{{ luks_encryption__partition_mount }}"
     device_type: "partition"
-  when: encrypt_partition
+  when: encrypt_partition and skip_tasks is not defined
