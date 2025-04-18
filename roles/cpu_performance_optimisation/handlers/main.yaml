@@ -1,0 +1,15 @@
+ # cpu-performance-optimisation/handlers/main.yaml
+---
+- name: Start tuned
+  ansible.builtin.systemd_service:
+    name: tuned
+    state: restarted
+    enabled: true
+    daemon_reload: true
+
+- name: Start disable_cstates
+  ansible.builtin.systemd_service:
+    name: disable-cstates
+    state: restarted
+    enabled: true
+    daemon_reload: true

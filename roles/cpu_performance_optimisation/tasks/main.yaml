@@ -1,28 +1,28 @@
-#roles/cpu-performance-optimisation/tasks/main.yaml
+ # roles/cpu-performance-optimisation/tasks/main.yaml
 ---
 # 1. Disable C-state for all available CPUs
 - name: Set CPU count fact
-  set_fact:
+  ansible.builtin.set_fact:
     cpu_count: "{{ ansible_processor_vcpus | default(ansible_processor_count) }}"
 
 - name: Check if cpuidle directory exists for each CPU
-  stat:
+  ansible.builtin.stat:
     path: "/sys/devices/system/cpu/cpu{{ item }}/cpuidle"
   register: cpuidle_valid
   loop: "{{ range(0, cpu_count | int) | list }}"
 
 - name: Verify at least one CPU has cpuidle support
-  debug:
+  ansible.builtin.debug:
     msg: "No CPUs with cpuidle support found. Skipping C-state optimization."
-  when: not cpuidle_valid.results[0].stat.exists 
+  when: not cpuidle_valid.results[0].stat.exists
 
 - name: Set C state valid
-  set_fact:
+  ansible.builtin.set_fact:
     cpu_cstate_valid: "{{ cpuidle_valid.results[0].stat.exists | default(false) | bool }}"
 
 - name: Create necessary directories
-  file:
-    path: "{{ disable_cstates_dir }}"
+  ansible.builtin.file:
+    path: "{{ cpu_performance_optimisation__disable_cstates_dir }}"
     state: directory
     owner: root
     group: root
@@ -30,46 +30,48 @@
   when: cpu_cstate_valid
 
 - name: Copy templates
-  template:
+  ansible.builtin.template:
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
     owner: root
     group: root
     mode: "{{ item.mode }}"
   loop:
-    - { src: disable-cstates.sh.j2, dest: "{{ disable_cstates_dir }}/disable-cstates.sh", mode: '0750' }
+    - { src: disable-cstates.sh.j2, dest: "{{ cpu_performance_optimisation__disable_cstates_dir }}/disable-cstates.sh", mode: '0750' }
     - { src: disable-cstates.service.j2, dest: /etc/systemd/system/disable-cstates.service, mode: '0644'}
-  notify: start disable_cstates
+  notify: Start disable_cstates
   when: cpu_cstate_valid
 
 # 2. Switching CPU operation to performance
 - name: Install tuned package
-  apt:
+  ansible.builtin.apt:
     name: tuned
     state: present
-  notify: start tuned
+  notify: Start tuned
 
 - name: Check current tuned profile
-  command: tuned-adm active
-  register: current_tuned_profile
+  ansible.builtin.command: tuned-adm active
+  register: current_cpu_performance_optimisation__tuned_profile
   changed_when: false
 
-- name: tuned active profile
-  command: "tuned-adm profile {{ tuned_profile }}"
+- name: Register tuned active profile
+  ansible.builtin.command: "tuned-adm profile {{ cpu_performance_optimisation__tuned_profile }}"
   register: tuned_activate_results
-  changed_when: "tuned_profile not in current_tuned_profile.stdout"
+  changed_when: "cpu_performance_optimisation__tuned_profile not in current_cpu_performance_optimisation__tuned_profile.stdout"
   failed_when: tuned_activate_results.rc != 0
 
 - name: Check available governors
-  command: cat /sys/devices/system/cpu/cpufreq/policy0/scaling_available_governors
+  ansible.builtin.command: cat /sys/devices/system/cpu/cpufreq/policy0/scaling_available_governors
   register: available_governors
   ignore_errors: true
+  changed_when: false
 
 - name: Set performance governor if available
-  command: echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+  ansible.builtin.command: echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+  changed_when: false
   when: "'performance' in available_governors.stdout"
 
 - name: Report if performance governor was not available
-  debug:
+  ansible.builtin.debug:
     msg: "Performance governor not available."
   when: "'performance' not in available_governors.stdout or not available_governors.failed"

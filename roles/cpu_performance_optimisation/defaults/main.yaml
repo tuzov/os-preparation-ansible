@@ -1,0 +1,12 @@
+ # cpu-performance-optimisation/defaults/main.yaml
+---
+# does not work on aws
+# cpu_performance_optimisation__disable_cstates_persistent: false
+# cpu_performance_optimisation__disable_cstates_grub_cmdline: "intel_idle.max_cstate=0 processor.max_cstate=1 idle=poll"
+
+# Tuned configuration
+cpu_performance_optimisation__configure_tuned: true
+cpu_performance_optimisation__tuned_profile: latency-performance
+
+# Disable_cstate service
+cpu_performance_optimisation__disable_cstates_dir: /opt/scripts

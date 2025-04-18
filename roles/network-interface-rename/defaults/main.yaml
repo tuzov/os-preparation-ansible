@@ -1,3 +1,0 @@
-#roles/network-interface-rename/defaults/main.yaml
----
-new_interface_name: "net0"

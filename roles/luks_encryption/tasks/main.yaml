@@ -1,30 +1,30 @@
-#roles/luks-encryption/tasks/main.yaml
+ # roles/luks-encryption/tasks/main.yaml
 ---
 - name: Set fact for devices to encrypt
-  set_fact:
+  ansible.builtin.set_fact:
     encrypt_disk: "{{ secondary_disk is defined and secondary_disk != '' }}"
     encrypt_partition: "{{ partition_on_primary is defined and partition_on_primary != '' }}"
 
 - name: Install cryptsetup package
-  apt:
-    name: 
+  ansible.builtin.apt:
+    name:
       - cryptsetup
       - coreutils
     state: present
 
 # encrypt disk if configured
 - name: Encrypt disks
-  include_tasks: disk_specific.yaml
+  ansible.builtin.include_tasks: disk_specific.yaml
   vars:
     target_device: "{{ secondary_disk }}"
-    target_name: "{{ disk_mount }}"
+    target_name: "{{ luks_encryption__disk_mount }}"
   when: encrypt_disk
 
 # encrypt partition if configured
 - name: Encrypt partition
-  include_tasks: partition_specific.yaml
+  ansible.builtin.include_tasks: partition_specific.yaml
   vars:
     target_device: "{{ partition_on_primary }}"
-    target_name: "{{ partition_mount }}"
+    target_name: "{{ luks_encryption__partition_mount }}"
     device_type: "partition"
   when: encrypt_partition

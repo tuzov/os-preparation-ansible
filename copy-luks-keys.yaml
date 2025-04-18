@@ -10,50 +10,50 @@
     remote_secret_dir: "/dev/shm"
 
   tasks:
-  - name: Ensure remote secret directories exist
-    file:
-      path: "{{ item }}"
-      state: directory
-      owner: root
-      group: root
-      mode: '0700'
-    loop:
-      - "{{ remote_secret_dir }}"
-      - "{{ remote_secret_dir }}/{{ keyfiles_dir }}"
-      - "{{ remote_secret_dir }}/{{ headers_dir }}"
+    - name: Ensure remote secret directories exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0700'
+      loop:
+        - "{{ remote_secret_dir }}"
+        - "{{ remote_secret_dir }}/{{ keyfiles_dir }}"
+        - "{{ remote_secret_dir }}/{{ headers_dir }}"
 
-  - name: Find keyfiles for this host
-    find:
-      paths: "{{ local_secret_dir }}/{{ keyfiles_dir }}"
-      patterns: "key-{{ ansible_hostname }}*"
-    register: host_keyfiles
-    delegate_to: localhost
-    become: false
-  
-  - name: Find LUKS headers for this host
-    find:
-      paths: "{{ local_secret_dir }}/{{ headers_dir }}"
-      patterns: "header-{{ ansible_hostname }}*.bin"
-    register: host_headers
-    delegate_to: localhost
-    become: false   
+    - name: Find keyfiles for this host
+      ansible.builtin.find:
+        paths: "{{ local_secret_dir }}/{{ keyfiles_dir }}"
+        patterns: "key-{{ ansible_hostname }}*"
+      register: host_keyfiles
+      delegate_to: localhost
+      become: false
 
-  - name: Copy keyfiles to remote system
-    copy:
-      src: "{{ item.path }}"
-      dest: "{{ remote_secret_dir }}/{{ keyfiles_dir }}/{{ item.path | basename }}"
-      owner: root
-      group: root
-      mode: '0400'
-    loop: "{{ host_keyfiles.files }}"
-    when: host_keyfiles.files | length > 0
-  
-  - name: Copy LUKS headers to remote system
-    copy:
-      src: "{{ item.path }}"
-      dest: "{{ remote_secret_dir }}/{{ headers_dir }}/{{ item.path | basename }}"
-      owner: root
-      group: root
-      mode: '0400'
-    loop: "{{ host_headers.files }}"
-    when: host_headers.files | length > 0
+    - name: Find LUKS headers for this host
+      ansible.builtin.find:
+        paths: "{{ local_secret_dir }}/{{ headers_dir }}"
+        patterns: "header-{{ ansible_hostname }}*.bin"
+      register: host_headers
+      delegate_to: localhost
+      become: false
+
+    - name: Copy keyfiles to remote system
+      ansible.builtin.copy:
+        src: "{{ item.path }}"
+        dest: "{{ remote_secret_dir }}/{{ keyfiles_dir }}/{{ item.path | basename }}"
+        owner: root
+        group: root
+        mode: '0400'
+      loop: "{{ host_keyfiles.files }}"
+      when: host_keyfiles.files | length > 0
+
+    - name: Copy LUKS headers to remote system
+      ansible.builtin.copy:
+        src: "{{ item.path }}"
+        dest: "{{ remote_secret_dir }}/{{ headers_dir }}/{{ item.path | basename }}"
+        owner: root
+        group: root
+        mode: '0400'
+      loop: "{{ host_headers.files }}"
+      when: host_headers.files | length > 0

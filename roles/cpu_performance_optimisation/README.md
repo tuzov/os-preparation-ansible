@@ -17,9 +17,9 @@ The role uses a combination of sysfs modifications, tuned profiles, and a custom
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `configure_tuned` | `true` | Whether to install and configure the tuned service |
-| `tuned_profile` | `latency-performance` | The tuned profile to use for performance optimization |
-| `disable_cstates_dir` | `/opt/scripts` | Directory where C-state disabling script will be placed |
+| `cpu_performance_optimisation__configure_tuned` | `true` | Whether to install and configure the tuned service |
+| `cpu_performance_optimisation__tuned_profile` | `latency-performance` | The tuned profile to use for performance optimization |
+| `cpu_performance_optimisation__disable_cstates_dir` | `/opt/scripts` | Directory where C-state disabling script will be placed |
 
 ## Dependencies
 
@@ -46,7 +46,7 @@ With custom tuned profile:
     - role: cpu-performance-optimisation
       tags: cpu
       vars:
-        tuned_profile: "powersave"
+        cpu_performance_optimisation__tuned_profile: "powersave"
 ```
 
 ## How It Works

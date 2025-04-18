@@ -1,39 +1,41 @@
 # main.yaml - course playbook
-- hosts: os_preparation
+---
+- name: OS preparation
+  hosts: os_preparation
   user: ubuntu
-  become: yes
+  become: true
   become_user: root
   gather_facts: true
 
   roles:
-  - role: luks-encryption
-    tags: luks 
+    - role: luks_encryption
+      tags: luks
 
-  - role: cpu-performance-optimisation
-    tags: cpu 
+    - role: cpu_performance_optimisation
+      tags: cpu
 
-  - role: network-interface-rename
-    tags: interface 
+    - role: network_interface_rename
+      tags: interface
 
   tasks:
-  - name: Set hyperthreading status 
-    set_fact:
-      hyperthreading: >-
-        {% if  ansible_processor_threads_per_core | int > 1 %}
-          Enabled {% else %}
-          Disabled {% endif %}
-    tags: always
+    - name: Set hyperthreading status
+      ansible.builtin.set_fact:
+        hyperthreading: >-
+          {% if  ansible_processor_threads_per_core | int > 1 %}
+            Enabled {% else %}
+            Disabled {% endif %}
+      tags: always
 
-  - name: Display CPU information
-    debug:
-      msg:
-        - "===== CPU Information ====="
-        - "Vendor: {{ ansible_processor[1] }}"
-        - "CPU Model: {{ ansible_processor[2] }}"
-        - "CPU(s): {{ ansible_processor_nproc }}"
-        - "Socket(s): {{ ansible_processor_count }}"
-        - "Core(s) per socket: {{ ansible_processor_cores }}"
-        - "Thread(s) per core: {{ ansible_processor_threads_per_core }}"
-        - "Multithreading: {{ hyperthreading }}"
-        - "==========================="
-    tags: always
+    - name: Display CPU information
+      ansible.builtin.debug:
+        msg:
+          - "===== CPU Information ====="
+          - "Vendor: {{ ansible_processor[1] }}"
+          - "CPU Model: {{ ansible_processor[2] }}"
+          - "CPU(s): {{ ansible_processor_nproc }}"
+          - "Socket(s): {{ ansible_processor_count }}"
+          - "Core(s) per socket: {{ ansible_processor_cores }}"
+          - "Thread(s) per core: {{ ansible_processor_threads_per_core }}"
+          - "Multithreading: {{ hyperthreading }}"
+          - "==========================="
+      tags: always

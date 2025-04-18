@@ -1,0 +1,31 @@
+ # roles/luks-encryption/defaults/main.yaml
+---
+# directories for keyfile and header storage
+luks_encryption__local_secret_dir: "{{ playbook_dir }}/secrets"
+luks_encryption__remote_secret_dir: "/dev/shm"
+luks_encryption__keyfiles_dir: cryptsetup-keys
+luks_encryption__headers_dir: luks-headers
+
+# Keyfile settings
+# a key size in bits has to be a multiple of 8. The default comes from `cryptsetup --help`
+luks_encryption__keyfile_size: 256
+luks_encryption__keyfile_source_dev: /dev/random # /dev/urandom
+
+luks_encryption__keyfile_cipher_default: aes-cbc-essiv:sha256
+luks_encryption__keyfile_cipher_light: aes-xts-plain64 # for tiny partition that can't take default partition
+
+luks_encryption__manage_filesystem: true # if true will create a filesystem
+luks_encryption__manage_mount: true # one-time mount only because keyfile only lives on the system uptill reboot
+luks_encryption__fstype: ext4
+# specify disk/partition mounting points; used to dev/mapper name as well
+luks_encryption__disk_mount: /data
+luks_encryption__partition_mount: /tiny-data
+
+luks_encryption__mount_owner: root
+luks_encryption__mount_group: root
+
+# Header backups
+luks_encryption__header_backup: true
+
+# an empty place holder for information about encryption devices
+luks_encryption__encryption_targets: {}

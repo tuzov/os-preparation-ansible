@@ -1,36 +1,38 @@
-# roles/network-interface-rename/tasks/main.yaml
+ # roles/network-interface-rename/tasks/main.yaml
 ---
 
 - name: Check if net0 interface exists
-  set_fact:
-    net0_exists: "{{ new_interface_name in ansible_facts.interfaces }}"
+  ansible.builtin.set_fact:
+    net0_exists: "{{ network_interface_rename__new_interface_name_ }} in ansible_facts.interfaces"
 
-- name: "{{ new_interface_name }} check result"
-  debug:
-    msg: "Interface {{ new_interface_name }} already exists. Skipping rename process."
+- name: Log if net0 interface exits
+  ansible.builtin.debug:
+    msg: "Interface {{ network_interface_rename__new_interface_name_ }} already exists. Skipping rename process."
   when: net0_exists
 
-- block:
-    #1. identify active interface
+- name: Changing Network Interface
+  when: not net0_exists
+  block:
+    # 1. identify active interface
     - name: Display current active interface facts
-      debug:
+      ansible.builtin.debug:
         msg: "Interface is {{ ansible_default_ipv4.interface }}, Mac is {{ ansible_default_ipv4.macaddress }}"
 
-    #2. get the MAC address and save it as variable
+    # 2. get the MAC address and save it as variable
     - name: Check if MAC address was found
-      fail:
+      ansible.builtin.fail:
         msg: "No MAC address found for interface {{ ansible_default_ipv4.interface }}"
       when: ansible_default_ipv4.macaddress is not defined or ansible_default_ipv4.macaddress | length == 0
 
-    #3. find,backup,remove current configs
+    # 3. find,backup,remove current configs
     - name: Find existing netplan configurations
-      find:
+      ansible.builtin.find:
         paths: /etc/netplan
         patterns: "*.yaml"
       register: cloud_netplan_files
 
     - name: Backup current netplan configs
-      copy:
+      ansible.builtin.copy:
         src: "{{ item.path }}"
         dest: "{{ item.path }}.bak"
         mode: '0600'
@@ -38,40 +40,39 @@
       loop: "{{ cloud_netplan_files.files }}"
 
     - name: Remove current netplan configs
-      file:
+      ansible.builtin.file:
         path: "{{ item.path }}"
         state: absent
       loop: "{{ cloud_netplan_files.files }}"
 
-    #4. template new configuration
+    # 4. template new configuration
     - name: Create netplan config with renamed interface
-      template:
+      ansible.builtin.template:
         src: 01-net0-cfg.yaml.j2
-        dest: /etc/netplan/01-{{ new_interface_name }}-cfg.yaml
+        dest: /etc/netplan/01-{{ network_interface_rename__new_interface_name_ }}-cfg.yaml
         owner: root
         group: root
         mode: '0600'
 
-    #5. netplan apply
+    # 5. netplan apply
     - name: Apply netplan config
-      command: netplan apply
+      ansible.builtin.command: netplan apply
       register: netplan_result
       failed_when: netplan_result.rc != 0
+      changed_when: false
 
     - name: Wait for network to stabilize
-      pause:
+      ansible.builtin.pause:
         seconds: 5
 
-    #6. display information
+    # 6. display information
     - name: Gather updated facts
-      setup:
+      ansible.builtin.setup:
         gather_subset:
           - network
 
-  when: not net0_exists
-
 - name: Display information about renamed interface
-  debug:
+  ansible.builtin.debug:
     msg:
       - "===== Interface Information ====="
       - "Address: {{ ansible_facts.default_ipv4.address }}"

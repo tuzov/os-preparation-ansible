@@ -1,0 +1,11 @@
+ # roles/luks-encryption/tasks/partition_specific.yaml
+---
+- name: Import assert.yaml
+  ansible.builtin.import_tasks:
+    file: assert.yaml
+
+# common encryption tasks
+- name: Include common encryption tasks
+  ansible.builtin.include_tasks: common.yaml
+  vars:
+    device_type: "partition"

@@ -1,27 +1,28 @@
-#roles/luks-encryption/tasks/disk_specific.yaml
+ # roles/luks-encryption/tasks/disk_specific.yaml
 ---
 - name: Import assert.yaml
-  import_tasks:
+  ansible.builtin.import_tasks:
     file: assert.yaml
 
 # disk-specific tasks
 - name: Check if disk already has GPT partition tables
-  command: parted -s {{ target_device }} print
+  ansible.builtin.command: parted -s {{ target_device }} print
   register: parted_check
   changed_when: false
   failed_when: parted_check.rc != 0 and "'unrecognised disk label' not in parted_check.stderr"
 
 - name: Fail if disk already has gpt partition
-  fail:
+  ansible.builtin.fail:
     msg: Disk {{ target_device }} already has GPT partition, thus it is likely to be in use already. Please check!
-  when: "'gpt' in parted_check.stdout" 
+  when: "'gpt' in parted_check.stdout"
 
 - name: Create GPT partition table on disks
-  command: parted -s {{ target_device }} mklabel gpt
+  ansible.builtin.command: parted -s {{ target_device }} mklabel gpt
+  changed_when: false
   when: parted_check.rc == 0 and "'gpt' not in parted_check.stdout"
- 
+
 # common encryption tasks
 - name: Include common encryption tasks
-  include_tasks: common.yaml
+  ansible.builtin.include_tasks: common.yaml
   vars:
     device_type: "disk"

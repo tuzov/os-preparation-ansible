@@ -50,23 +50,23 @@ Also avoid encrypting:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `local_secret_dir` | `{{ playbook_dir }}/secrets` | Local directory for keyfiles and headers |
-| `remote_secret_dir` | `/dev/shm` | Remote in-memory directory for sensitive operations |
-| `keyfiles_dir` | `cryptsetup-keys` | Subdirectory for keyfiles |
-| `headers_dir` | `luks-headers` | Subdirectory for LUKS headers |
-| `keyfile_size` | `256` | Size of encryption key in bits |
-| `keyfile_source_dev` | `/dev/random` | Source for random keyfile generation |
-| `keyfile_cipher_default` | `aes-cbc-essiv:sha256` | Default cipher for encryption |
-| `keyfile_cipher_light` | `aes-xts-plain64` | Lightweight cipher for small partitions |
-| `manage_filesystem` | `true` | Create filesystem on encrypted device |
-| `manage_mount` | `true` | Mount encrypted device after setup |
-| `fstype` | `ext4` | Filesystem type to create |
-| `disk_mount` | `/data` | Mount point for encrypted disk |
-| `partition_mount` | `/tiny-data` | Mount point for encrypted partition |
-| `mount_owner` | `root` | Owner of mount point directory |
-| `mount_group` | `root` | Group of mount point directory |
+| `luks_encryption__local_secret_dir` | `{{ playbook_dir }}/secrets` | Local directory for keyfiles and headers |
+| `luks_encryption__remote_secret_dir` | `/dev/shm` | Remote in-memory directory for sensitive operations |
+| `luks_encryption__keyfiles_dir` | `cryptsetup-keys` | Subdirectory for keyfiles |
+| `luks_encryption__headers_dir` | `luks-headers` | Subdirectory for LUKS headers |
+| `luks_encryption__keyfile_size` | `256` | Size of encryption key in bits |
+| `luks_encryption__keyfile_source_dev` | `/dev/random` | Source for random keyfile generation |
+| `luks_encryption__keyfile_cipher_default` | `aes-cbc-essiv:sha256` | Default cipher for encryption |
+| `luks_encryption__keyfile_cipher_light` | `aes-xts-plain64` | Lightweight cipher for small partitions |
+| `luks_encryption__manage_filesystem` | `true` | Create filesystem on encrypted device |
+| `luks_encryption__manage_mount` | `true` | Mount encrypted device after setup |
+| `luks_encryption__fstype` | `ext4` | Filesystem type to create |
+| `luks_encryption__disk_mount` | `/data` | Mount point for encrypted disk |
+| `luks_encryption__partition_mount` | `/tiny-data` | Mount point for encrypted partition |
+| `luks_encryption__mount_owner` | `root` | Owner of mount point directory |
+| `luks_encryption__mount_group` | `root` | Group of mount point directory |
 | `shred_before_encryption` | `false` | Shred partitions before encryption (time-consuming) |
-| `header_backup` | `true` | Create LUKS header backups |
+| `luks_encryption__header_backup` | `true` | Create LUKS header backups |
 
 ## Dependencies
 
@@ -101,10 +101,10 @@ With custom configuration:
 [os_preparation:vars]
 secondary_disk=/dev/sdb
 partition_on_primary=/dev/sda14
-disk_mount=/encrypted-data
-partition_mount=/encrypted-home
-mount_owner=appuser
-mount_group=appgroup
+luks_encryption__disk_mount=/encrypted-data
+luks_encryption__partition_mount=/encrypted-home
+luks_encryption__mount_owner=appuser
+luks_encryption__mount_group=appgroup
 ```
 
 To copy keyfiles and headers to remote machines after reboot, please utilise `copy-luks-keys.yaml` playbook.

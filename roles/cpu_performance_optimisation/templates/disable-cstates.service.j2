@@ -3,7 +3,7 @@ Description=Disable CPU C-states
 After=multi-user.target
 
 [Service]
-ExecStart={{ disable_cstates_dir }}/disable-cstates.sh
+ExecStart={{ cpu_performance_optimisation__disable_cstates_dir }}/disable-cstates.sh
 Type=oneshot
 RemainAfterExit=true
 
