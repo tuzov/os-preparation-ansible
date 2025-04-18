@@ -1,10 +1,14 @@
- # roles/luks-encryption/tasks/disk_specific.yaml
 ---
 - name: Import assert.yaml
   ansible.builtin.import_tasks:
     file: assert.yaml
 
 # disk-specific tasks
+- name: Install parted
+  ansible.builtin.apt:
+    name: parted
+    state: present
+
 - name: Check if disk already has GPT partition tables
   ansible.builtin.command: parted -s {{ target_device }} print
   register: parted_check
