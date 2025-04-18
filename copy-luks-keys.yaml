@@ -1,3 +1,4 @@
+---
 - name: Copy LUKS encryption keys and headers to appropriate hosts
   hosts: all
   user: ubuntu
