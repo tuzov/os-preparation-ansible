@@ -36,7 +36,7 @@
 
 - name: Check if devices are mounted
   ansible.builtin.set_fact:
-    device_in_use: "Device {{ device_mapper_name }} is currently mounted." 
+    device_in_use: "Device {{ device_mapper_name }} is currently mounted."
   when: target_device in ansible_mounts | map(attribute='mount') | list
 
 - name: "Check if device mapper for this device is mounted: {{ target_device }}"
@@ -86,4 +86,3 @@
       {% endif %}.
       Danger of overwriting data! Skipping remaining tasks for {{ target_device }}"
   when: skip_tasks is defined
-

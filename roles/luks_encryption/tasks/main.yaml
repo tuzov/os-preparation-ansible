@@ -17,7 +17,7 @@
   vars:
     target_device: "{{ secondary_disk }}"
     target_name: "{{ luks_encryption__disk_mount }}"
-  when: encrypt_disk 
+  when: encrypt_disk
 
 - name: Import assert.yaml
   ansible.builtin.import_tasks:
@@ -26,7 +26,7 @@
     target_device: "{{ partition_on_primary }}"
     target_name: "{{ luks_encryption__partition_mount }}"
   when: encrypt_partition
-  
+
 # encrypt disk if configured
 - name: Encrypt disks
   ansible.builtin.include_tasks: disk_specific.yaml

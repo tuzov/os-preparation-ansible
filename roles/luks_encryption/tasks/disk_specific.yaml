@@ -1,9 +1,4 @@
 ---
-# - name: Import assert.yaml
-#   ansible.builtin.import_tasks:
-#     file: assert.yaml
-
-# disk-specific tasks
 - name: Install parted
   ansible.builtin.apt:
     name:
@@ -20,7 +15,7 @@
 - name: Set variable if disk is already encrypted with LUKS
   ansible.builtin.set_fact:
     disk_already_encrypted: "Disk {{ target_device }} is already encrypted with LUKS. Skipping remaining disk-specific tasks."
-  when: 'crypto_LUKS' in blkid_check.stdout
+  when: "'crypto_LUKS' in blkid_check.stdout"
 
 - name: Check if disk already has GPT partition tables
   ansible.builtin.command: parted -s {{ target_device }} print
@@ -49,7 +44,7 @@
       {% if disk_already_encrypted is defined %}
         {{ disk_already_encrypted }};
       {% endif %}
-      Disk might contain data! Skipping remaining tasks for {{ target_device }}"
+      Disk might contain data! Skipping remaining tasks for {{ target_device }}
   when: disk_with_gpt is defined or disk_already_encrypted is defined
 
 # common encryption tasks
