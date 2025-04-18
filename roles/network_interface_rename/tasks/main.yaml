@@ -1,7 +1,7 @@
 ---
 - name: Check if net0 interface exists
   ansible.builtin.set_fact:
-    net0_exists: "{{ network_interface_rename__new_interface_name }} in ansible_facts.interfaces"
+    net0_exists: "{{ network_interface_rename__new_interface_name in ansible_facts.interfaces }}"
 
 - name: Log if net0 interface exits
   ansible.builtin.debug:
