@@ -1,4 +1,3 @@
- # cpu-performance-optimisation/defaults/main.yaml
 ---
 # does not work on aws
 # cpu_performance_optimisation__disable_cstates_persistent: false
