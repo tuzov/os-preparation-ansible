@@ -1,6 +1,4 @@
- # roles/network-interface-rename/tasks/main.yaml
 ---
-
 - name: Check if net0 interface exists
   ansible.builtin.set_fact:
     net0_exists: "{{ network_interface_rename__new_interface_name }} in ansible_facts.interfaces"
@@ -18,43 +16,31 @@
       ansible.builtin.debug:
         msg: "Interface is {{ ansible_default_ipv4.interface }}, Mac is {{ ansible_default_ipv4.macaddress }}"
 
-    # 2. get the MAC address and save it as variable
-    - name: Check if MAC address was found
-      ansible.builtin.fail:
-        msg: "No MAC address found for interface {{ ansible_default_ipv4.interface }}"
-      when: ansible_default_ipv4.macaddress is not defined or ansible_default_ipv4.macaddress | length == 0
-
-    # 3. find,backup,remove current configs
+    # 3. find current confing
     - name: Find existing netplan configurations
       ansible.builtin.find:
         paths: /etc/netplan
         patterns: "*.yaml"
       register: cloud_netplan_files
 
-    - name: Backup current netplan configs
-      ansible.builtin.copy:
-        src: "{{ item.path }}"
-        dest: "{{ item.path }}.bak"
-        mode: '0600'
-        remote_src: true
-      loop: "{{ cloud_netplan_files.files }}"
+    # 4. fail if there are more than one config file
+    - name: Fail if multiple netplan configuration files are found
+      ansible.builtin.fail:
+        msg: >-
+          Multiple netplan configuration files found:
+          {{ cloud_netplan_files.files | map(attribute='path') | list | join(', ') }}.
+          This role only supports a single netplan configuration file.
+      when: cloud_netplan_files.files | length > 1
 
-    - name: Remove current netplan configs
-      ansible.builtin.file:
-        path: "{{ item.path }}"
-        state: absent
-      loop: "{{ cloud_netplan_files.files }}"
+    # 5. change the name in the existing netplan file
+    - name: Change the set-name value in netplan configuration
+      ansible.builtin.lineinfile:
+        path: "{{ cloud_netplan_files.files | map(attribute='path') | first }}"
+        regexp: '^(\s+set-name:\s+).*$'
+        line: '\1"{{ network_interface_rename__new_interface_name }}"'
+        backrefs: true
 
-    # 4. template new configuration
-    - name: Create netplan config with renamed interface
-      ansible.builtin.template:
-        src: 01-net0-cfg.yaml.j2
-        dest: /etc/netplan/01-{{ network_interface_rename__new_interface_name_ }}-cfg.yaml
-        owner: root
-        group: root
-        mode: '0600'
-
-    # 5. netplan apply
+    # 6. netplan apply
     - name: Apply netplan config
       ansible.builtin.command: netplan apply
       register: netplan_result
@@ -65,7 +51,7 @@
       ansible.builtin.pause:
         seconds: 5
 
-    # 6. display information
+    # 7. display information
     - name: Gather updated facts
       ansible.builtin.setup:
         gather_subset:
