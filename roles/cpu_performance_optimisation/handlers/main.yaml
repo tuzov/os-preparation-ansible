@@ -5,6 +5,7 @@
     state: restarted
     enabled: true
     daemon_reload: true
+  when: not ansible_check_mode
 
 - name: Start disable_cstates
   ansible.builtin.systemd_service:
@@ -12,3 +13,4 @@
     state: restarted
     enabled: true
     daemon_reload: true
+  when: not ansible_check_mode
