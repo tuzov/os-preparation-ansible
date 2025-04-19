@@ -11,7 +11,7 @@
 
 #### key Management
 # create directory structure for keyfiles
-- name: Create local secret directory
+- name: Create local secret directory {{ device_type }}
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
@@ -24,7 +24,7 @@
     - "{{ luks_encryption__local_secret_dir }}/{{ luks_encryption__keyfiles_dir }}"
     - "{{ luks_encryption__local_secret_dir }}/{{ luks_encryption__headers_dir }}"
 
-- name: Create remote secret directory in RAM
+- name: Create remote secret directory in RAM {{ device_type }}
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
@@ -36,7 +36,7 @@
     - "{{ luks_encryption__remote_secret_dir }}/{{ luks_encryption__keyfiles_dir }}"
     - "{{ luks_encryption__remote_secret_dir }}/{{ luks_encryption__headers_dir }}"
 
-- name: Generate binary keyfile on the Ansible controller
+- name: Generate binary keyfile on the Ansible controller {{ device_type }}
   ansible.builtin.command: >
     dd if={{ luks_encryption__keyfile_source_dev }}
     of={{ keyfile_of }}
@@ -50,7 +50,7 @@
     keyfile_of: "{{ luks_encryption__local_secret_dir }}/{{ luks_encryption__keyfiles_dir }}/key-{{ ansible_hostname }}{{ device_safe_name }}"
   become: false
 
-- name: Set permissions on local keyfiles
+- name: Set permissions on local keyfiles {{ device_type }}
   delegate_to: localhost
   ansible.builtin.file:
     path: "{{ luks_encryption__local_secret_dir }}/{{ luks_encryption__keyfiles_dir }}/key-{{ ansible_hostname }}{{ device_safe_name }}"
@@ -58,7 +58,7 @@
   become: false
 
 # check checksum if the same
-- name: Copy keyfiles to remote system
+- name: Copy keyfiles to remote system {{ device_type }}
   ansible.builtin.copy:
     src: "{{ luks_encryption__local_secret_dir }}/{{ luks_encryption__keyfiles_dir }}/key-{{ ansible_hostname }}{{ device_safe_name }}"
     dest: "{{ luks_encryption__remote_secret_dir }}/{{ luks_encryption__keyfiles_dir }}/key-{{ ansible_hostname }}{{ device_safe_name }}"
@@ -67,20 +67,19 @@
     group: root
 
 # select which cipher to pick
-- name: Check partition size
+- name: Check partition size {{ device_type }}
   ansible.builtin.command: blockdev --getsize64 {{ target_device }}
   register: device_size
   changed_when: false
   failed_when: device_size.rc != 0
 
-- name: Set appropriate cipher based on partition size
+- name: Set appropriate cipher based on partition size {{ device_type }}
   ansible.builtin.set_fact:
     selected_keyfile_cipher: >-
-      "{{ luks_encryption__keyfile_cipher_light if (device_size.stdout | int < 10 * 1024 * 1024) else luks_encryption__keyfile_cipher_default }}"
+      {{ luks_encryption__keyfile_cipher_light if (device_size.stdout | int < 10 * 1024 * 1024) else luks_encryption__keyfile_cipher_default }}
     luks_version: "{{ 'luks1' if (device_size.stdout | int < 10 * 1024 * 1024) else 'luks2' }}"
 
-# encrypt the drive using the cryptsetup
-- name: Create LUKS container (unchanged if exists)
+- name: Create LUKS container {{ device_type }}
   community.crypto.luks_device:
     device: "{{ target_device }}"
     state: present
@@ -89,18 +88,18 @@
     keyfile: "{{ luks_encryption__remote_secret_dir }}/{{ luks_encryption__keyfiles_dir }}/key-{{ ansible_hostname }}{{ device_safe_name }}"
 
 # find UUID of device
-- name: Get LUKS UUID for device
+- name: Get LUKS UUID for device {{ device_type }}
   ansible.builtin.command: blkid -s UUID -o value {{ target_device }}
   register: device_uuid
   changed_when: false
   failed_when: device_uuid.rc != 0 or device_uuid.stdout == ""
 
-- name: Update luks_encryption__encryption_targets with UUIDs
+- name: Update luks_encryption__encryption_targets with UUIDs {{ device_type }}
   ansible.builtin.set_fact:
     device_uuid: "{{ device_uuid.stdout }}"
 
 # add device to crypttab
-- name: Add device to crypttab
+- name: Add device to crypttab {{ device_type }}
   community.general.crypttab:
     name: "encrypted{{ device_safe_name }}"
     state: present
@@ -110,27 +109,27 @@
   no_log: true
 
 # start /etc/crypttab
-- name: Start device mapper target
+- name: Start device mapper target {{ device_type }}
   ansible.builtin.command: cryptdisks_start "encrypted{{ device_safe_name }}"
   register: cryptdisks_start_results
   changed_when: "'started' in cryptdisks_start_results.stdout"
   failed_when: cryptdisks_start_results.rc != 0
 
-- name: Check if device mapper target exists
+- name: Check if device mapper target exists {{ device_type }}
   ansible.builtin.stat:
     path: "/dev/mapper/encrypted{{ device_safe_name }}"
   register: device_mapper_stats
   failed_when: not device_mapper_stats.stat.exists
 
 # create filesystem ext4
-- name: Create filesystem on LUKS devices
+- name: Create filesystem on LUKS devices {{ device_type }}
   community.general.filesystem:
-    luks_encryption__fstype: "{{ luks_encryption__fstype }}"
+    fstype: "{{ luks_encryption__fstype }}"
     dev: "/dev/mapper/encrypted{{ device_safe_name }}"
   when: luks_encryption__manage_filesystem and device_mapper_stats.stat.exists
 
 # mount the drive
-- name: Create mount directory
+- name: Create mount directory {{ device_type }}
   ansible.builtin.file:
     path: "{{ target_name }}"
     state: directory
@@ -139,22 +138,22 @@
     mode: '0750'
   when: luks_encryption__manage_filesystem and device_mapper_stats.stat.exists
 
-- name: Check if target mount point exists
+- name: Check if target mount point exists {{ device_type }}
   ansible.builtin.stat:
     path: "{{ target_name }}"
   register: mount_point_stat
   when: luks_encryption__manage_filesystem and device_mapper_stats.stat.exists and luks_encryption__manage_mount
 
-- name: Mount encrypted device
+- name: Mount encrypted device {{ device_type }}
   ansible.posix.mount:
     path: "{{ target_name }}"
     src: "/dev/mapper/encrypted{{ device_safe_name }}"
-    luks_encryption__fstype: "{{ luks_encryption__fstype }}"
+    fstype: "{{ luks_encryption__fstype }}"
     state: mounted
   when: luks_encryption__manage_filesystem and device_mapper_stats.stat.exists and luks_encryption__manage_mount
 
 # header backup
-- name: Create temporary header backup on remote host
+- name: Create temporary header backup on remote host {{ device_type }}
   ansible.builtin.command: >
     cryptsetup luksHeaderBackup {{ target_device }}
     --header-backup-file {{ luks_encryption__remote_secret_dir }}/{{ luks_encryption__headers_dir }}/header-{{ ansible_hostname }}{{ device_safe_name }}.bin
@@ -162,7 +161,7 @@
   register: luks_encryption__header_backup_result
   changed_when: luks_encryption__header_backup_result.rc == 0
 
-- name: Set secure permissions on header backup file
+- name: Set secure permissions on header backup file {{ device_type }}
   ansible.builtin.file:
     path: "{{ luks_encryption__remote_secret_dir }}/{{ luks_encryption__headers_dir }}/header-{{ ansible_hostname }}{{ device_safe_name }}.bin"
     mode: '0400'
@@ -170,14 +169,14 @@
     group: root
   when: luks_encryption__header_backup and luks_encryption__header_backup_result.rc == 0
 
-- name: Copy header backup to Ansible controller
+- name: Copy header backup to Ansible controller {{ device_type }}
   ansible.builtin.fetch:
     src: "{{ luks_encryption__remote_secret_dir }}/{{ luks_encryption__headers_dir }}/header-{{ ansible_hostname }}{{ device_safe_name }}.bin"
     dest: "{{ luks_encryption__local_secret_dir }}/{{ luks_encryption__headers_dir }}/header-{{ ansible_hostname }}{{ device_safe_name }}.bin"
     flat: true
   when: luks_encryption__header_backup and luks_encryption__header_backup_result.rc == 0
 
-- name: Shred header backup on remote machine
+- name: Shred header backup on remote machine {{ device_type }}
   ansible.builtin.command: >
     shred --remove --zero --iterations=5
     "{{ luks_encryption__remote_secret_dir }}/{{ luks_encryption__headers_dir }}/header-{{ ansible_hostname }}{{ device_safe_name }}.bin"

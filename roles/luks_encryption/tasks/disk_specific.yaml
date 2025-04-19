@@ -52,4 +52,4 @@
   ansible.builtin.include_tasks: common.yaml
   vars:
     device_type: "disk"
-  when: disk_with_gpt is not defined and disk_already_encrypted is not defined
+  when: disk_with_gpt is not defined and disk_already_encrypted is not defined or not ansible_check_mode

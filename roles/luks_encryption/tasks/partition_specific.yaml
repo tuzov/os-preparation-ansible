@@ -8,3 +8,4 @@
   ansible.builtin.include_tasks: common.yaml
   vars:
     device_type: "partition"
+  when: not ansible_check_mode

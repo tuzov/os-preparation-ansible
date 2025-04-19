@@ -1,7 +1,7 @@
 ---
 # directories for keyfile and header storage
 luks_encryption__local_secret_dir: "{{ playbook_dir }}/secrets"
-luks_encryption__remote_secret_dir: "/dev/shm"
+luks_encryption__remote_secret_dir: /dev/shm
 luks_encryption__keyfiles_dir: cryptsetup-keys
 luks_encryption__headers_dir: luks-headers
 
