@@ -1,45 +1,59 @@
 ---
-- name: Set fact for devices to encrypt
-  ansible.builtin.set_fact:
-    encrypt_disk: "{{ secondary_disk is defined and secondary_disk != '' }}"
-    encrypt_partition: "{{ partition_on_primary is defined and partition_on_primary != '' }}"
-
-- name: Install cryptsetup package
+# 1. run prerequisites tasks
+- name: Install neccessary packages
   ansible.builtin.apt:
     name:
       - cryptsetup
       - coreutils
+      - parted
+      - util-linux
     state: present
 
-- name: Import assert.yaml
-  ansible.builtin.import_tasks:
-    file: assert.yaml
-  vars:
-    target_device: "{{ secondary_disk }}"
-    target_name: "{{ luks_encryption__disk_mount }}"
-  when: encrypt_disk
+- name: Create necessary directories on local machine
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0700'
+  run_once: true
+  delegate_to: localhost
+  become: false
+  loop:
+    - "{{ luks_encryption__local_secret_dir }}"
+    - "{{ luks_encryption__local_secret_dir }}/{{ luks_encryption__keyfiles_dir }}"
+    - "{{ luks_encryption__local_secret_dir }}/{{ luks_encryption__headers_dir }}"
 
-- name: Import assert.yaml
-  ansible.builtin.import_tasks:
-    file: assert.yaml
-  vars:
-    target_device: "{{ partition_on_primary }}"
-    target_name: "{{ luks_encryption__partition_mount }}"
-  when: encrypt_partition
+- name: Create necessary directories on target machine
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+  loop:
+    - "{{ luks_encryption__remote_secret_dir }}"
+    - "{{ luks_encryption__remote_secret_dir }}/{{ luks_encryption__keyfiles_dir }}"
+    - "{{ luks_encryption__remote_secret_dir }}/{{ luks_encryption__headers_dir }}"
 
-# encrypt disk if configured
-- name: Encrypt disks
-  ansible.builtin.include_tasks: disk_specific.yaml
-  vars:
-    target_device: "{{ secondary_disk }}"
-    target_name: "{{ luks_encryption__disk_mount }}"
-  when: encrypt_disk and skip_tasks is not defined
+# 2. set encryption targets as a list
+- name: Set encryption targets
+  ansible.builtin.set_fact:
+    encryption_targets:
+      - id: "disk"
+        enabled: "{{ secondary_disk is defined and secondary_disk != '' }}"
+        device: "{{ secondary_disk | default('') }}"
+        mount_point: "{{ luks_encryption__disk_mount }}"
+        type: "disk"
+      - id: "partition"
+        enabled: "{{ partition_on_primary is defined and partition_on_primary != '' }}"
+        device: "{{ partition_on_primary | default('') }}"
+        mount_point: "{{ luks_encryption__partition_mount }}"
+        type: "partition"
 
-# encrypt partition if configured
-- name: Encrypt partition
-  ansible.builtin.include_tasks: partition_specific.yaml
-  vars:
-    target_device: "{{ partition_on_primary }}"
-    target_name: "{{ luks_encryption__partition_mount }}"
-    device_type: "partition"
-  when: encrypt_partition and skip_tasks is not defined
+# 3. run common tasks with variable isolation
+- name: Process encryption targets
+  ansible.builtin.include_tasks: validate_encrypt.yaml
+  loop: "{{ encryption_targets }}"
+  loop_control:
+    loop_var: encryption_target
+    label: "{{ encryption_target.type }}: {{ encryption_target.device }}"
+  when: encryption_target.enabled | bool
