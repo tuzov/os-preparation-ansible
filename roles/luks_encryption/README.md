@@ -2,14 +2,14 @@
 
 ## Description
 
-This Ansible role implements LUKS (Linux Unified Key Setup) encryption for disks and partitions on Linux systems. It supports encrypting both entire secondary disks and individual partitions on the primary disk, creating secure encrypted volumes with automated key management. The role handles the complete encryption lifecycle including key generation, LUKS setup, filesystem creation, and mounting. For smaller than 10M device, luks1 encryption type is used, luks2 for the rest.
+This Ansible role implements LUKS (Linux Unified Key Setup) encryption for disks and partitions on Linux systems. It supports encrypting both entire secondary disks and individual partition on the primary disk, creating secure encrypted volumes with automated key management.
 
-The role uses cryptsetup to implement encryption, generates secure keyfiles for automated unlocking, and configures the system for persistent mounting through /etc/crypttab entries.
-
-This role will halt execution if either the partition or secondary disk is already encrypted. If you want to encrypt a new device while one is already encrypted, remove the encrypted device's name from the corresponding variable (either partition_on_primary or secondary_disk) before running the role.
+The role handles the complete encryption lifecycle including key generation, LUKS setup, filesystem creation, and mounting. For devices smaller than 10MB, LUKS1 encryption type is used, while LUKS2 is used for larger devices.
 
 ## ⚠️ CRITICAL WARNING ⚠️
+
 NEVER encrypt the BIOS boot partition on the primary disk! This partition (typically 4MB in size and marked with bios_grub flag) is essential for system boot. Encrypting this partition will render your system completely unbootable and may require full reinstallation.
+
 Before proceeding with encryption, always identify the BIOS boot partition:
 ```
 # lsblk
@@ -32,7 +32,6 @@ Number  Start   End     Size    File system  Name  Flags
 
 As shown above, partition 14 has the bios_grub flag and is 4MB - this partition must never be encrypted.
 Also avoid encrypting:
-
 * EFI System Partition (often mounted at /boot/efi)
 * /boot partition
 * Active root partition without proper initramfs configuration
@@ -45,7 +44,12 @@ Also avoid encrypting:
 - One of the following:
   - A secondary disk to encrypt completely
   - A partition on the primary disk to encrypt
-
+- Required Ansible collections:
+```
+ansible-galaxy collection install community.general
+ansible-galaxy collection install community.crypto
+ansible-galaxy collection install ansible.posix
+```
 ## Role Variables
 
 | Variable | Default | Description |
@@ -65,7 +69,6 @@ Also avoid encrypting:
 | `luks_encryption__partition_mount` | `/tiny-data` | Mount point for encrypted partition |
 | `luks_encryption__mount_owner` | `root` | Owner of mount point directory |
 | `luks_encryption__mount_group` | `root` | Group of mount point directory |
-| `shred_before_encryption` | `false` | Shred partitions before encryption (time-consuming) |
 | `luks_encryption__header_backup` | `true` | Create LUKS header backups |
 
 ## Dependencies
@@ -83,9 +86,12 @@ None.
       tags: luks
 ```
 
-```yaml
-#inventory.ini
+With inventory configuration:
+
+```ini
+# inventory.ini
 [os_preparation]
+server1.example.com
 
 [os_preparation:vars]
 secondary_disk=/dev/xvdf
@@ -95,8 +101,9 @@ partition_on_primary=/dev/xvda14
 With custom configuration:
 
 ```yaml
-#inventory.ini
+# inventory.ini
 [os_preparation]
+server1.example.com
 
 [os_preparation:vars]
 secondary_disk=/dev/sdb
@@ -107,21 +114,25 @@ luks_encryption__mount_owner=appuser
 luks_encryption__mount_group=appgroup
 ```
 
-To copy keyfiles and headers to remote machines after reboot, please utilise `copy-luks-keys.yaml` playbook.
-
 ## How It Works
 
-1. Validates required variables and checks if target devices exist and are not mounted
-2. Installs required packages (cryptsetup, coreutils)
-3. For disk encryption:
-   - Creates GPT partition table if needed
-   - Generates secure keyfiles for encryption
+1. Installs required packages (cryptsetup, coreutils, parted, util-linux)
+2. Creates necessary directories for keyfiles and headers
+2. Validates required variables and checks (if check fail then encryption skipped):
+  - if target devices exist 
+  - if target devices are not mounted
+  - if target devices is already encrypted with luks
+  - if device mappers exists, so luks container are open
+  - if `/etc/crypttab` has target devices listed
+  - if target devices have any existing partition (for disk only)
+4. For encryption:
+   - Creates GPT partition table (for disk only)
+   - Generates secure keyfiles for encryption on local machine
+   - Copies the secure keyfiles to remote machine
    - Creates LUKS container on the device
-   - Adds entries to /etc/crypttab for persistent configuration
-   - Creates filesystem and mounts the encrypted volume
-   - Creates LUKS header backups for recovery
-4. For partition encryption:
-   - Follows similar steps as disk encryption without partition table manipulation
+   - Adds entries to /etc/crypttab for configuration
+   - Creates filesystem and mounts the encrypted volume (optional)
+   - Creates LUKS header backups for recovery on local machine (optional)
 
 
 ## Verification
@@ -139,7 +150,7 @@ ls -la /dev/mapper/encrypted*
 df -h | grep encrypted
 
 # Validate that data can be written to encrypted volumes
-touch /data/test-file
+touch /data/testfile
 ```
 
 ## Testing
@@ -148,8 +159,7 @@ To test this role in isolation before deploying to production:
 
 1. Run the role with `--check` mode first to preview changes
 2. Apply the role to a test system with non-critical data
-3. Reboot the system to verify persistent mounting
-4. Test recovery procedures using the header backups
+3. Test recovery procedures using the header backups
 
 ## Limitations and Considerations
 
@@ -158,3 +168,4 @@ To test this role in isolation before deploying to production:
 - For critical data, consider implementing additional backup strategies
 - The keyfiles are generated automatically and should be securely stored
 - Mounts do not survive reboot as keyfile is located on `/dev/shm`
+- To copy keyfiles and headers to remote machines after reboot, please use the included `copy-luks-keys.yaml` playbook
