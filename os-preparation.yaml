@@ -9,7 +9,7 @@
 
   roles:
    - role: luks_encryption
-      tags: luks
+     tags: luks
 
     - role: cpu_performance_optimisation
       tags: cpu
