@@ -1,4 +1,4 @@
-# Ansible Role: cpu-performance-optimisation
+# Ansible Role: cpu_performance_optimisation
 
 ## Description
 
@@ -58,8 +58,12 @@ With custom tuned profile:
 
 2. CPU Governor Configuration:
    - Installs and configures the tuned service for CPU performance management
-   - Sets the CPU frequency scaling governor to "performance" mode
+   - Sets the CPU frequency scaling governor to "performance" mode if available
    - Applies performance-optimized tuned profile
+
+3. Startup Configuration:
+   - Creates and enables systemd services for both tuned and C-state disabling
+   - Ensures settings persist through system reboots
 
 ## Verification
 
@@ -75,11 +79,13 @@ cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 # Check active tuned profile
 tuned-adm active
 
-# Check all the available profile
+# Check all the available profiles
 tuned-adm profile
-```
 
-The role also outputs information about CPU governor configuration at the end of execution.
+# Verify systemd services
+systemctl status tuned
+systemctl status disable-cstates
+```
 
 ## Testing
 

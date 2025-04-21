@@ -1,4 +1,4 @@
-# Ansible Role: luks-encryption
+# Ansible Role: luks_encryption
 
 ## Description
 
